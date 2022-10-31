@@ -1,0 +1,9 @@
+{
+    "currentTerm": 1,
+    "votedFor": "",
+    "log": [],
+    "timeoutInterval": 1500,
+    "heartbeatInterval": 500,
+    "leaderInfo": null,
+    "commitIndex": -1
+}

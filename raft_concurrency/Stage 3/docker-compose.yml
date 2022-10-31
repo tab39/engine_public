@@ -1,0 +1,110 @@
+version: '3'
+services:
+
+  master-app:
+    environment:
+      - DB_NETWORK=postgres-master
+    container_name: master_app
+    build: .
+    ports: 
+      - '8080:8080'
+    restart: always
+    volumes:
+      - api:/usr/src/app/
+    depends_on:
+      - postgres-master        
+    networks:
+      - master-companion-1
+      - master-companion-2 
+      - master-db-master
+
+  companion-app-1:
+    environment:
+      - DB_NETWORK=postgres-companion-app-1
+    container_name: companion_app_1
+    ports: 
+      - '8081:8080'
+    build: .
+    restart: always
+    volumes:
+      - api:/usr/src/app/
+    depends_on:
+      - postgres-companion-app-1        
+    networks:
+      - master-companion-1
+      - companion-1-db-1
+
+  companion-app-2:
+    environment:
+      - DB_NETWORK=postgres-companion-app-2
+    container_name: companion_app_2
+    ports: 
+      - '8082:8080'
+    build: .
+    restart: always
+    volumes:
+      - api:/usr/src/app/
+    depends_on:
+      - postgres-companion-app-2         
+    networks:
+      - master-companion-2 
+      - companion-2-db-2
+
+  postgres-master:
+    image: postgres:latest
+    container_name: db_postgres_master
+    restart: always
+    environment:
+      - POSTGRES_DB=records_store
+      - POSTGRES_USER=records_store
+      - POSTGRES_PASSWORD=password
+      - DATABASE_HOST=fullstack-postgres
+    volumes:
+      - /postgres-data:/var/lib/postgresql/data
+    networks:
+      - master-db-master
+  
+  postgres-companion-app-1:
+    image: postgres:latest
+    container_name: db_postgres_companion_app_1
+    restart: always
+    environment:
+      - POSTGRES_DB=records_store
+      - POSTGRES_USER=records_store
+      - POSTGRES_PASSWORD=password
+      - DATABASE_HOST=fullstack-postgres
+    volumes:
+      - /postgres-data:/var/lib/postgresql/data
+    networks:
+      - companion-1-db-1
+
+  postgres-companion-app-2:
+    image: postgres:latest
+    container_name: db_postgres_companion_app_2
+    restart: always
+    environment:
+      - POSTGRES_DB=records_store
+      - POSTGRES_USER=records_store
+      - POSTGRES_PASSWORD=password
+      - DATABASE_HOST=fullstack-postgres
+    volumes:
+      - /postgres-data:/var/lib/postgresql/data
+    networks:
+      - companion-2-db-2
+
+volumes:
+  api:
+  postgres-data:                  
+
+# Networks to be created to facilitate communication between containers
+networks:
+  master-companion-1:
+    driver: bridge
+  master-companion-2:
+    driver: bridge
+  master-db-master:
+    driver: bridge
+  companion-1-db-1:
+    driver: bridge
+  companion-2-db-2:
+    driver: bridge

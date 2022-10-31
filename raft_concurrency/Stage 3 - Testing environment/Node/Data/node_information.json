@@ -1,0 +1,8 @@
+{
+    "currentTerm": 1,
+    "votedFor": "",
+    "log": [],
+    "timeoutInterval": 900,
+    "heartbeatInterval": 300,
+    "leaderInfo": null
+}
