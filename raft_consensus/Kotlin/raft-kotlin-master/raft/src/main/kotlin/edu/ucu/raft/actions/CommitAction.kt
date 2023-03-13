@@ -1,36 +1,58 @@
-package edu.ucu.raft.actions
+/*
+ * Implementation of a commit action.
+ */
 
-import edu.ucu.raft.adapters.ClusterNode
-import edu.ucu.raft.state.NodeState
-import edu.ucu.raft.state.State
-import mu.KotlinLogging
+package my.company.myproject.actions;
 
-class CommitAction(val state: State, val cluster: List<ClusterNode>) {
+import my.company.myproject.adapters.ClusterNode;
+import my.company.myproject.state.NodeState;
+import my.company.myproject.state.State;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    private val log = state.log
-    private val logger = KotlinLogging.logger {}
+import java.util.List;
 
+public class CommitAction {
+    private final State state;
+    private final List<ClusterNode> cluster;
+    private final Logger logger;
 
-    fun perform() {
-        if (state.current == NodeState.LEADER) {
-            val newCommit = ((state.log.commitIndex + 1)..Int.MAX_VALUE)
-                    .takeWhile { newCommit ->
-                        val clusterApprove = matchIndexMatches(newCommit)
-                        val logLastTermMatch = log[newCommit]?.term == state.term
-                        clusterApprove && logLastTermMatch
-                    }
-                    .lastOrNull()
-            newCommit?.run {
-                logger.info { "Doing commit at $newCommit" }
-                log.commit(this)
+    public CommitAction(State state, List<ClusterNode> cluster) {
+        this.state = state;
+        this.cluster = cluster;
+        this.logger = LoggerFactory.getLogger(getClass());
+    }
+
+    public void perform() {
+        if (state.getCurrent() == NodeState.LEADER) {
+            int newCommit = findNewCommit();
+            if (newCommit > 0) {
+                logger.info("Committing at {}", newCommit);
+                state.getLog().commit(newCommit);
             }
         }
     }
 
-    private fun matchIndexMatches(newCommit: Int): Boolean {
-        val majority = Math.floorDiv(cluster.size, 2)
-        return cluster.filter { it.matchIndex >= newCommit }.count() > majority
-
+    private int findNewCommit() {
+        for (int newCommit = state.getLog().getCommitIndex() + 1; newCommit <= Integer.MAX_VALUE; newCommit++) {
+            if (!matchIndexMatches(newCommit)) {
+                return newCommit - 1;
+            }
+            if (state.getLog().get(newCommit) != null && state.getLog().get(newCommit).getTerm() == state.getTerm()) {
+                continue;
+            }
+            return newCommit - 1;
+        }
+        return -1;
     }
 
+    private boolean matchIndexMatches(int newCommit) {
+        int matches = 0;
+        for (ClusterNode node : cluster) {
+            if (node.getMatchIndex() >= newCommit) {
+                matches++;
+            }
+        }
+        return matches > Math.floorDiv(cluster.size(), 2);
+    }
 }
